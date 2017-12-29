@@ -8,7 +8,8 @@ First, import this repository in npm:
 ```json
 dependencies: {
   "unified-discord-bots-api": "https://github.com/adri326/unified-discord-bots-api.git"
-}```
+}
+```
 
 Then, execute `npm install unified-discord-bots-api` and import the library in NodeJS using ```js
 var udb_api = require("unified-discord-bots-api");```
