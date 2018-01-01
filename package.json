@@ -1,0 +1,23 @@
+{
+  "name": "unified-discord-bots-api",
+  "version": "1.0.0",
+  "description": "An unified (and fixed) version of the discord-bots-api for NodeJS, which supports plural websites (e.g discordbots.org or bots.discord.pw)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No test command set\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adri326/unified-discord-bots-api.git"
+  },
+  "keywords": [
+    "udb-api",
+    "discord-bots"
+  ],
+  "author": "adri326",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/adri326/unified-discord-bots-api/issues"
+  },
+  "homepage": "https://github.com/adri326/unified-discord-bots-api#readme"
+}
