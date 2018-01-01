@@ -1,4 +1,4 @@
-const rp = require("request-promise");
+const rp = require("request-promise-native");
 const events = require("events");
 
 const default_settings = {
@@ -6,104 +6,89 @@ const default_settings = {
 }
 
 
-class DiscordBots extends events.EventEmitter
-{
-  constructor(settings)
-  {
-    super();
-    this.settings = Object.assign(settings, default_settings);
-    if (this.interval)
-    {
+class DiscordBots extends events.EventEmitter {
+  constructor(settings) {
+    super(settings);
+    Object.assign(this, settings, default_settings);
+
+    if (this.interval && this.interval > 0) {
       clearInterval(this.interval);
     }
 
-    if (Array.isArray(this.settings.websites))
-    {
-      this.settings.websites.forEach(website =>
-      {
-        let parsed;
-        if (parsed = /^(?:(?:https?:)?\/\/)?([\w\.\-_]+)\/?$/.exec(website.url)) // If the given url does not have a `path`
-        {
-          website.url = "https://" + parsed[1] + "/api";
+    if (Array.isArray(this.websites) || this.url) {
+      (this.websites || [this]).forEach(website => {
+        if (website.url) {
+          let parsed;
+          if (parsed = /^(?:(?:https?:)?\/\/)?([\w\.\-_]+)\/?$/.exec(website.url)) { // If the given url does not have a `path`
+            website.url = "https://" + parsed[1] + "/api";
+          }
         }
       });
     }
 
-    if (this.settings.interval > 0)
-    {
-      this.interval = setInterval(this.update.bind(this), this.settings.interval);
+    if (this.interval > 0) {
+      this.interval = setInterval(this.update.bind(this), this.interval);
       this.update();
     }
+
     return this;
   }
 
-  update()
-  {
-    if (Array.isArray(this.settings.websites) && (this.settings.client) && (this.settings.client).user)
-    {
-      this.settings.websites.forEach((website, id) =>
-      {
-        this.postStats(website).then(_ =>
-          {
+  update() {
+    if (Array.isArray(this.websites) || this.url) {
+      (this.websites || [this]).forEach((website, id) => {
+        this.postStats(website).then(_ => {
             this.emit("success", _);
           })
-          .catch(_ =>
-          {
+          .catch(_ => {
             this.emit("error", _);
-          })
+          });
       });
     }
   }
 
-  getBots(website)
-  {
-    return this.request(website,
-    {
+  getBots(website) {
+    return this.request(website, {
       method: "GET",
       url: "/bots"
     })
   }
 
-  getInfo(website)
-  {
-    return this.request(website,
-    {
+  getInfo(website) {
+    return this.request(website, {
       method: "GET",
       url: "/bots/:id"
     })
   }
 
-  getStats(website)
-  {
-    return this.request(website,
-    {
+  getStats(website) {
+    return this.request(website, {
       method: "GET",
       url: "/bots/:id/stats"
     });
   }
 
-  postStats(website)
-  {
-    return this.request(website,
-    {
+  postStats(website) {
+    return this.request(website, {
       method: "POST",
       url: "/bots/:id/stats"
     })
   }
 
-  request(website, settings)
-  {
-    const _request = (resolve, reject) =>
-    {
-      let url = (website.url || (this.settings.websites[website] || {}).url || website).replace(/\/$/, "");
-      let botID = website.id || (this.settings.websites[website] || {}).id || this.settings.client.user.id;
-      let sc = website.server_count || (this.settings.websites[website] || {}).server_count || Array.from(this.settings.client.guilds).length;
-      let token = website.token || (this.settings.websites[website] || {}).url;
-      
-      if (url && botID && typeof sc != "undefined" && token)
-      {
-        let options =
-        {
+  request(_website, settings) {
+    let website = _website;
+    if (this.websites && this.websites[_website]) website = this.websites[website];
+
+    let client = this.client || website.client || {user: {}, guilds: {}};
+
+    const _request = (resolve, reject) => {
+      let url = (website.url || _website).replace(/\/$/, "");
+      let botID = website.id || client.user.id;
+      let sc = website.server_count || client.guilds.size;
+      let token = website.token;
+
+      if (url && botID && typeof sc != "undefined" && token) {
+        let options = {
           method: settings.method,
           uri: url + settings.url.replace(/:id|:bot_user_id/g, botID),
           body: {
@@ -115,38 +100,33 @@ class DiscordBots extends events.EventEmitter
           json: true
         };
 
-        rp(options).then(output =>
-        {
-          if (output)
-          {
-            if (typeof output == "object")
-            {
+        rp(options).then(output => {
+          if (output) {
+            if (typeof output == "object") {
               resolve(output);
             }
-            else if (typeof output == "string")
-            {
+            else if (typeof output == "string") {
               resolve(JSON.parse(output));
             }
           }
-          else
-          {
-            reject({
-              "error": "No answer"
-            });
+          else {
+            reject(new Error("No answer"));
           }
         }).catch(reject);
       }
-      else
-      {
-        if (!url) reject("Invalid URL");
-        if (!botID) reject("Invalid bot ID");
-        if (typeof sc == "undefined") reject("Invalid server count");
-        if (!token) reject("Invalid token");
+      else {
+        if (!website) reject(new Error("No website given!"));
+        if (!client && !botID) reject(new Error("No client nor bot ID!"));
+        if (!client && !sc && sc !== 0) reject(new Error("No client nor valid server count!"));
+        if (!url) reject(new Error("Invalid URL"));
+        if (!botID) reject(new Error("Invalid bot ID"));
+        if (!sc && sc !== 0) reject(new Error("Invalid server count"));
+        if (!token) reject(new Error("Invalid token"));
       }
     };
-    
+
     return new Promise(_request);
   }
 };
 
-module.exports = new DiscordBots();
+module.exports = DiscordBots;

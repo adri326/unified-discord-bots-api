@@ -19,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/adri326/unified-discord-bots-api/issues"
   },
-  "homepage": "https://github.com/adri326/unified-discord-bots-api#readme"
+  "homepage": "https://github.com/adri326/unified-discord-bots-api#readme",
+  "dependencies": {
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5"
+  }
 }
